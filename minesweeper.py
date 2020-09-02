@@ -205,8 +205,33 @@ class MinesweeperAI():
                 if 0 <= i < self.height and 0 <= i < self.width:
                     sentence.add((i, j))
 
-        self.knowledge.append(Sentence(sentence, count))        
+        self.knowledge.append(Sentence(sentence, count))
+
+        # mark any additional cells as safe or as mines if it can be concluded based on the AI's knowledge base        
         
+        tmp_safes = set()
+        for sentence in self.knowledge:
+            if sentence.known_safes():
+                tmp_safes.add(sentence.known_safes)
+        for cell in tmp_safes:
+            self.mark_safe(cell)
+
+        tmp_mines = set()
+        for sentence in self.knowledge:
+            if sentence.known_mines():
+                tmp_mines.add(sentence.known_mines)
+        for cell in tmp_mines:
+            self.mark_mine(cell)
+
+        # add any new sentences to the AI's knowledge base if they can be inferred from existing knowledge
+        for i in range(len(self.knowledge)):
+            for j  in range(len(self.knowledge)):
+                if i == j:
+                    continue
+                elif self.knowledge[i].cells < self.knowledge[j].cells:
+                    sentence_tmp = self.knowledge[j].cells - self.knowledge[i].cells
+                    count_tmp = self.knowledge[j].count - self.knowledge[i].count
+                    self.knowledge.append(Sentence(sentence_tmp, count_tmp))
 
 
     def make_safe_move(self):
@@ -218,7 +243,8 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        move_tmp = self.safes - self.moves_made
+        return move_tmp.pop
 
     def make_random_move(self):
         """
@@ -227,4 +253,16 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        while true:
+            i = random.randrange(self.height)
+            j = random.randrange(self.width)
+            
+            if not (i,j) in self.mines and not (i,j) in self.moves_made:
+                return (i,j)
+            
+            
+            if not self.board[i][j]:
+                self.mines.add((i, j))
+                self.board[i][j] = True
+
+
